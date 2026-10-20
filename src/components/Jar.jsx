@@ -1,5 +1,7 @@
 import { Box, Typography } from "@mui/material";
 import { motion } from "framer-motion";
+import Wave from "./Wave";
+import { formatCurrency } from "../utils/formatters";
 
 function Jar({ name, balance, fillPercent, color }) {
   const safeFill = Math.min(Math.max(fillPercent, 0), 100);
@@ -45,7 +47,35 @@ function Jar({ name, balance, fillPercent, color }) {
             right: 0,
             backgroundColor: color,
           }}
-        />
+        >
+          {safeFill > 0 && (
+            <>
+              <Wave color={color} duration={4} opacity={0.5} reverse />
+              <Wave color={color} duration={3} />
+            </>
+          )}
+        </motion.div>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            px: { xs: 0.75, md: 1.25 },
+            py: 0.25,
+            borderRadius: 2,
+            bgcolor: "rgba(255, 255, 255, 0.88)",
+            boxShadow: 1,
+            whiteSpace: "nowrap",
+          }}
+        >
+          <Typography
+            fontWeight={700}
+            sx={{ fontSize: { xs: "0.75rem", md: "0.95rem" } }}
+          >
+            {formatCurrency(balance)}
+          </Typography>
+        </Box>
       </Box>
 
       <Typography
@@ -57,12 +87,6 @@ function Jar({ name, balance, fillPercent, color }) {
         }}
       >
         {name}
-      </Typography>
-      <Typography
-        color="text.secondary"
-        sx={{ fontSize: { xs: "0.75rem", md: "0.875rem" } }}
-      >
-        ₹{balance}
       </Typography>
     </Box>
   );

@@ -18,6 +18,7 @@ import navItems from "../utils/navItems";
 import { useState } from "react";
 import AddIcon from "@mui/icons-material/Add";
 import AddTransactionDialog from "./AddTransactionDialog";
+import AddGoalDialog from "./AddGoalDialog";
 
 const DRAWER_WIDTH = 240;
 
@@ -26,6 +27,7 @@ function Layout() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const isGoalsPage = pathname === "/goals";
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleOpenDialog = (event) => {
@@ -107,17 +109,21 @@ function Layout() {
       )}
       <Fab
         color="primary"
-        aria-label="Add transaction"
+        aria-label={isGoalsPage ? "Add goal" : "Add transaction"}
         onClick={() => setDialogOpen(true)}
         sx={{ position: "fixed", right: 24, bottom: { xs: 88, md: 32 } }}
       >
         <AddIcon />
       </Fab>
 
-      <AddTransactionDialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-      />
+      {isGoalsPage ? (
+        dialogOpen && <AddGoalDialog onClose={() => setDialogOpen(false)} />
+      ) : (
+        <AddTransactionDialog
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+        />
+      )}
     </Box>
   );
 }

@@ -1,6 +1,7 @@
 import { createContext, useState } from "react";
 import defaultJars from "../utils/defaultJars";
 import useLocalStorage from "../hooks/useLocalStorage";
+import { applyIncomeToGoals } from "../utils/goalHelpers";
 
 export const AppDataContext = createContext(null);
 
@@ -10,6 +11,7 @@ export function AppDataProvider({ children }) {
     "spendwise-transactions",
     [],
   );
+  const [goals, setGoals] = useLocalStorage("spendwise-goals", []);
 
   const addTransaction = (transaction) => {
     const newTransaction = {
@@ -20,19 +22,29 @@ export function AppDataProvider({ children }) {
 
     setTransactions((previous) => [newTransaction, ...previous]);
 
+    if (transaction.type === "expense") {
+      setJars((previousJars) =>
+        previousJars.map((jar) =>
+          jar.id === transaction.jarId
+            ? { ...jar, balance: jar.balance - transaction.amount }
+            : jar,
+        ),
+      );
+      return;
+    }
+
+    const { updatedGoals, remainingIncome } = applyIncomeToGoals(
+      goals,
+      transaction.amount,
+    );
+
+    setGoals(updatedGoals);
+
     setJars((previousJars) =>
-      previousJars.map((jar) => {
-        if (transaction.type === "income") {
-          return {
-            ...jar,
-            balance: jar.balance + (transaction.amount * jar.percent) / 100,
-          };
-        }
-        if (jar.id === transaction.jarId) {
-          return { ...jar, balance: jar.balance - transaction.amount };
-        }
-        return jar;
-      }),
+      previousJars.map((jar) => ({
+        ...jar,
+        balance: jar.balance + (remainingIncome * jar.percent) / 100,
+      })),
     );
   };
 
@@ -50,7 +62,45 @@ export function AppDataProvider({ children }) {
       }),
     );
   };
-  const value = { jars, transactions, addTransaction, updateJarSettings };
+  const addGoal = (goal) => {
+    const newGoal = {
+      id: crypto.randomUUID(),
+      savedAmount: 0,
+      createdAt: new Date().toISOString(),
+      ...goal,
+    };
+
+    setGoals((previous) => [newGoal, ...previous]);
+  };
+
+  const addMoneyToGoal = (goalId, amount) => {
+    const goal = goals.find((item) => item.id === goalId);
+    if (!goal || goal.fundingType !== "jar") return;
+
+    setGoals((previous) =>
+      previous.map((item) =>
+        item.id === goalId
+          ? { ...item, savedAmount: item.savedAmount + amount }
+          : item,
+      ),
+    );
+
+    setJars((previous) =>
+      previous.map((jar) =>
+        jar.id === goal.jarId ? { ...jar, balance: jar.balance - amount } : jar,
+      ),
+    );
+  };
+
+  const value = {
+    jars,
+    transactions,
+    goals,
+    addTransaction,
+    updateJarSettings,
+    addGoal,
+    addMoneyToGoal,
+  };
 
   return (
     <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>

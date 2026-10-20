@@ -42,7 +42,10 @@ function AddTransactionDialog({ open, onClose }) {
     onClose();
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (!isValid) return;
+
     addTransaction({
       type: form.type,
       amount: Number(form.amount),
@@ -53,7 +56,13 @@ function AddTransactionDialog({ open, onClose }) {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs">
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      fullWidth
+      maxWidth="xs"
+      slotProps={{ paper: { component: "form", onSubmit: handleSubmit } }}
+    >
       <DialogTitle>Add transaction</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
@@ -69,6 +78,7 @@ function AddTransactionDialog({ open, onClose }) {
           </ToggleButtonGroup>
 
           <TextField
+            autoFocus
             label="Amount (₹)"
             type="number"
             value={form.amount}
@@ -103,7 +113,7 @@ function AddTransactionDialog({ open, onClose }) {
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={!isValid}>
+        <Button type="submit" variant="contained" disabled={!isValid}>
           Add
         </Button>
       </DialogActions>
