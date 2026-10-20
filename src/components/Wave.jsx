@@ -1,17 +1,23 @@
 import { Box } from "@mui/material";
 import { motion } from "framer-motion";
 
-const WAVE_HEIGHT = 12;
+const DEFAULT_WAVE_HEIGHT = 12;
 
-function Wave({ color, duration = 3, opacity = 1, reverse = false }) {
+function Wave({
+  color,
+  duration = 3,
+  opacity = 1,
+  reverse = false,
+  height = DEFAULT_WAVE_HEIGHT,
+}) {
   return (
     <Box
       sx={{
         position: "absolute",
         left: 0,
         right: 0,
-        top: -WAVE_HEIGHT,
-        height: WAVE_HEIGHT,
+        top: -height,
+        height,
         pointerEvents: "none",
       }}
     >

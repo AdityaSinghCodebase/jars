@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   Box,
@@ -6,19 +7,18 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Typography,
   BottomNavigation,
   BottomNavigationAction,
   Paper,
-  useMediaQuery,
   Fab,
+  useMediaQuery,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import navItems from "../utils/navItems";
-import { useState } from "react";
 import AddIcon from "@mui/icons-material/Add";
 import AddTransactionDialog from "./AddTransactionDialog";
 import AddGoalDialog from "./AddGoalDialog";
+import Logo from "./Logo";
+import navItems from "../utils/navItems";
 
 const DRAWER_WIDTH = 240;
 
@@ -27,8 +27,8 @@ function Layout() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const isGoalsPage = pathname === "/goals";
   const [dialogOpen, setDialogOpen] = useState(false);
+  const isGoalsPage = pathname === "/goals";
 
   const handleOpenDialog = (event) => {
     event.currentTarget.blur();
@@ -50,14 +50,9 @@ function Layout() {
             },
           }}
         >
-          <Typography
-            variant="h5"
-            fontWeight={700}
-            color="primary"
-            sx={{ mb: 3, px: 1 }}
-          >
-            Jars
-          </Typography>
+          <Box sx={{ mb: 3, px: 1, pt: 0.5 }}>
+            <Logo />
+          </Box>
           <List>
             {navItems.map((item) => (
               <ListItemButton
@@ -74,16 +69,33 @@ function Layout() {
         </Drawer>
       )}
 
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          minWidth: 0,
-          p: { xs: 2, md: 4 },
-          pb: { xs: 10, md: 4 },
-        }}
-      >
-        <Outlet />
+      <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+        {isMobile && (
+          <Box
+            component="header"
+            sx={{
+              position: "sticky",
+              top: 0,
+              zIndex: theme.zIndex.appBar,
+              display: "flex",
+              alignItems: "center",
+              px: 2,
+              py: 1,
+              bgcolor: "background.paper",
+              borderBottom: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            <Logo size={32} />
+          </Box>
+        )}
+
+        <Box
+          component="main"
+          sx={{ p: { xs: 2, md: 4 }, pb: { xs: 10, md: 4 } }}
+        >
+          <Outlet />
+        </Box>
       </Box>
 
       {isMobile && (
@@ -107,10 +119,11 @@ function Layout() {
           </BottomNavigation>
         </Paper>
       )}
+
       <Fab
         color="primary"
         aria-label={isGoalsPage ? "Add goal" : "Add transaction"}
-        onClick={() => setDialogOpen(true)}
+        onClick={handleOpenDialog}
         sx={{ position: "fixed", right: 24, bottom: { xs: 88, md: 32 } }}
       >
         <AddIcon />
