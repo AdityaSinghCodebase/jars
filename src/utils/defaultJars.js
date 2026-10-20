@@ -4,7 +4,7 @@ const defaultJars = [
     name: "Necessities",
     percent: 50,
     balance: 0,
-    limit: 10000,
+    limitPercent: 60,
     color: "#4F46E5",
   },
   {
@@ -12,7 +12,7 @@ const defaultJars = [
     name: "Enjoy Today",
     percent: 20,
     balance: 0,
-    limit: 5000,
+    limitPercent: 30,
     color: "#F59E0B",
   },
   {
@@ -20,7 +20,7 @@ const defaultJars = [
     name: "Financial Freedom",
     percent: 20,
     balance: 0,
-    limit: 5000,
+    limitPercent: 30,
     color: "#10B981",
   },
   {
@@ -28,7 +28,7 @@ const defaultJars = [
     name: "Give Back",
     percent: 10,
     balance: 0,
-    limit: 2000,
+    limitPercent: 15,
     color: "#EC4899",
   },
 ];

@@ -1,11 +1,15 @@
 import { createContext, useState } from "react";
 import defaultJars from "../utils/defaultJars";
+import useLocalStorage from "../hooks/useLocalStorage";
 
 export const AppDataContext = createContext(null);
 
 export function AppDataProvider({ children }) {
-  const [jars, setJars] = useState(defaultJars);
-  const [transactions, setTransactions] = useState([]);
+  const [jars, setJars] = useLocalStorage("spendwise-jars", defaultJars);
+  const [transactions, setTransactions] = useLocalStorage(
+    "spendwise-transactions",
+    [],
+  );
 
   const addTransaction = (transaction) => {
     const newTransaction = {
@@ -32,7 +36,21 @@ export function AppDataProvider({ children }) {
     );
   };
 
-  const value = { jars, transactions, addTransaction };
+  const updateJarSettings = (updatedJars) => {
+    setJars((previousJars) =>
+      previousJars.map((jar) => {
+        const updated = updatedJars.find((item) => item.id === jar.id);
+        return updated
+          ? {
+              ...jar,
+              percent: updated.percent,
+              limitPercent: updated.limitPercent,
+            }
+          : jar;
+      }),
+    );
+  };
+  const value = { jars, transactions, addTransaction, updateJarSettings };
 
   return (
     <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>

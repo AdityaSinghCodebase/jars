@@ -10,13 +10,13 @@ function Jar({ name, balance, fillPercent, color }) {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        width: 140,
+        width: "100%",
       }}
     >
       <Box
         sx={{
-          width: 80,
-          height: 14,
+          width: { xs: 56, md: 80 },
+          height: { xs: 10, md: 14 },
           bgcolor: "grey.400",
           borderRadius: "6px 6px 0 0",
         }}
@@ -25,8 +25,8 @@ function Jar({ name, balance, fillPercent, color }) {
       <Box
         sx={{
           position: "relative",
-          width: 110,
-          height: 150,
+          width: { xs: 80, md: 110 },
+          height: { xs: 110, md: 150 },
           border: "3px solid",
           borderColor: "grey.400",
           borderRadius: "0 0 24px 24px",
@@ -48,10 +48,20 @@ function Jar({ name, balance, fillPercent, color }) {
         />
       </Box>
 
-      <Typography fontWeight={600} sx={{ mt: 1 }}>
+      <Typography
+        fontWeight={600}
+        sx={{
+          mt: 1,
+          textAlign: "center",
+          fontSize: { xs: "0.85rem", md: "1rem" },
+        }}
+      >
         {name}
       </Typography>
-      <Typography variant="body2" color="text.secondary">
+      <Typography
+        color="text.secondary"
+        sx={{ fontSize: { xs: "0.75rem", md: "0.875rem" } }}
+      >
         ₹{balance}
       </Typography>
     </Box>

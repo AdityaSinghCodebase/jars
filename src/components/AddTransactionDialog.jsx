@@ -83,6 +83,7 @@ function AddTransactionDialog({ open, onClose }) {
               value={form.jarId}
               onChange={handleChange("jarId")}
               fullWidth
+              slotProps={{ select: { MenuProps: { disablePortal: true } } }}
             >
               {jars.map((jar) => (
                 <MenuItem key={jar.id} value={jar.id}>
