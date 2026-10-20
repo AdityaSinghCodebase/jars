@@ -10,13 +10,16 @@ import { CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@emotion/react";
 import theme from "./theme/theme.js";
 import { BrowserRouter } from "react-router-dom";
+import { AppDataProvider } from "./context/AppDataContext.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
-        <App />
+        <AppDataProvider>
+          <App />
+        </AppDataProvider>
       </BrowserRouter>
     </ThemeProvider>
   </StrictMode>,
