@@ -92,6 +92,40 @@ export function AppDataProvider({ children }) {
     );
   };
 
+  const updateGoal = (goalId, changes) => {
+    setGoals((previous) =>
+      previous.map((goal) =>
+        goal.id === goalId ? { ...goal, ...changes } : goal,
+      ),
+    );
+  };
+
+  const deleteGoal = (goalId) => {
+    const goal = goals.find((item) => item.id === goalId);
+    if (!goal) return;
+
+    if (goal.savedAmount > 0 && goal.fundingType === "jar") {
+      setJars((previous) =>
+        previous.map((jar) =>
+          jar.id === goal.jarId
+            ? { ...jar, balance: jar.balance + goal.savedAmount }
+            : jar,
+        ),
+      );
+    }
+
+    if (goal.savedAmount > 0 && goal.fundingType === "percent") {
+      setJars((previous) =>
+        previous.map((jar) => ({
+          ...jar,
+          balance: jar.balance + (goal.savedAmount * jar.percent) / 100,
+        })),
+      );
+    }
+
+    setGoals((previous) => previous.filter((item) => item.id !== goalId));
+  };
+
   const value = {
     jars,
     transactions,
@@ -100,6 +134,8 @@ export function AppDataProvider({ children }) {
     updateJarSettings,
     addGoal,
     addMoneyToGoal,
+    updateGoal,
+    deleteGoal,
   };
 
   return (

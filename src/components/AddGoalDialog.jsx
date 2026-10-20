@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import goalIcons from "../utils/goalIcons";
 import useAppData from "../hooks/useAppData";
+import { formatCurrency } from "../utils/formatters";
 
 const initialForm = {
   name: "",
@@ -24,6 +25,19 @@ const initialForm = {
   percent: 10,
   jarId: "financial-freedom",
 };
+
+function getInitialForm(goal) {
+  if (!goal) return initialForm;
+
+  return {
+    name: goal.name,
+    iconKey: goal.iconKey,
+    targetAmount: String(goal.targetAmount),
+    fundingType: goal.fundingType ?? "percent",
+    percent: goal.percent ?? 10,
+    jarId: goal.jarId ?? "financial-freedom",
+  };
+}
 
 const labelSx = { fontSize: { xs: "0.75rem", md: "0.875rem" }, mb: 0.75 };
 
@@ -35,9 +49,14 @@ const toggleGroupSx = {
   "& .MuiSvgIcon-root": { fontSize: { xs: 20, md: 24 } },
 };
 
-function AddGoalDialog({ onClose }) {
-  const { jars, addGoal } = useAppData();
-  const [form, setForm] = useState(initialForm);
+function AddGoalDialog({ goal, onClose }) {
+  const { jars, addGoal, updateGoal } = useAppData();
+  const [form, setForm] = useState(() => getInitialForm(goal));
+
+  const isEditing = Boolean(goal);
+  const savedAmount = goal ? goal.savedAmount : 0;
+  const targetBelowSaved =
+    form.targetAmount !== "" && Number(form.targetAmount) < savedAmount;
 
   const handleChange = (field) => (event) => {
     setForm((previous) => ({ ...previous, [field]: event.target.value }));
@@ -56,20 +75,27 @@ function AddGoalDialog({ onClose }) {
   const isValid =
     form.name.trim() !== "" &&
     Number(form.targetAmount) > 0 &&
+    !targetBelowSaved &&
     (form.fundingType === "percent" || form.jarId !== "");
 
   const handleSubmit = (event) => {
     event.preventDefault();
     if (!isValid) return;
 
-    addGoal({
+    const details = {
       name: form.name.trim(),
       iconKey: form.iconKey,
       targetAmount: Number(form.targetAmount),
       fundingType: form.fundingType,
       percent: form.fundingType === "percent" ? form.percent : null,
       jarId: form.fundingType === "jar" ? form.jarId : null,
-    });
+    };
+
+    if (isEditing) {
+      updateGoal(goal.id, details);
+    } else {
+      addGoal(details);
+    }
     onClose();
   };
 
@@ -88,7 +114,7 @@ function AddGoalDialog({ onClose }) {
           pb: { xs: 0.5, md: 1 },
         }}
       >
-        New goal
+        {isEditing ? "Edit goal" : "New goal"}
       </DialogTitle>
       <DialogContent sx={{ px: { xs: 2, md: 3 } }}>
         <Stack spacing={{ xs: 1.75, md: 2.5 }} sx={{ mt: 1 }}>
@@ -129,26 +155,34 @@ function AddGoalDialog({ onClose }) {
             size="small"
             value={form.targetAmount}
             onChange={handleChange("targetAmount")}
+            error={targetBelowSaved}
+            helperText={
+              targetBelowSaved
+                ? `Already saved ${formatCurrency(savedAmount)}. Target can't be lower.`
+                : ""
+            }
             fullWidth
           />
 
-          <div>
-            <Typography color="text.secondary" sx={labelSx}>
-              How will you fund it?
-            </Typography>
-            <ToggleButtonGroup
-              value={form.fundingType}
-              exclusive
-              fullWidth
-              size="small"
-              color="primary"
-              onChange={handleToggle("fundingType")}
-              sx={toggleGroupSx}
-            >
-              <ToggleButton value="percent">% of income</ToggleButton>
-              <ToggleButton value="jar">From a jar</ToggleButton>
-            </ToggleButtonGroup>
-          </div>
+          {!isEditing && (
+            <div>
+              <Typography color="text.secondary" sx={labelSx}>
+                How will you fund it?
+              </Typography>
+              <ToggleButtonGroup
+                value={form.fundingType}
+                exclusive
+                fullWidth
+                size="small"
+                color="primary"
+                onChange={handleToggle("fundingType")}
+                sx={toggleGroupSx}
+              >
+                <ToggleButton value="percent">% of income</ToggleButton>
+                <ToggleButton value="jar">From a jar</ToggleButton>
+              </ToggleButtonGroup>
+            </div>
+          )}
 
           {form.fundingType === "percent" ? (
             <div>
@@ -193,7 +227,7 @@ function AddGoalDialog({ onClose }) {
           variant="contained"
           disabled={!isValid}
         >
-          Create goal
+          {isEditing ? "Save changes" : "Create goal"}
         </Button>
       </DialogActions>
     </Dialog>

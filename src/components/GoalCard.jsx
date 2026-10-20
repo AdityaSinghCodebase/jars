@@ -15,11 +15,18 @@ import { getGoalIcon } from "../utils/goalIcons";
 import { getGoalProgress } from "../utils/goalHelpers";
 import { getJarName } from "../utils/jarHelpers";
 import { formatCurrency } from "../utils/formatters";
+import { IconButton } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import AddGoalDialog from "./AddGoalDialog";
+import ConfirmDialog from "./ConfirmDialog";
 
 function GoalCard({ goal }) {
-  const { jars } = useAppData();
+  const { jars, deleteGoal } = useAppData();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [celebrating, setCelebrating] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const Icon = getGoalIcon(goal.iconKey);
   const progress = getGoalProgress(goal.savedAmount, goal.targetAmount);
@@ -50,6 +57,19 @@ function GoalCard({ goal }) {
   const handleOpenDialog = (event) => {
     event.currentTarget.blur();
     setDialogOpen(true);
+  };
+  const jarName = getJarName(jars, goal.jarId);
+
+  const deleteMessage =
+    goal.savedAmount > 0 && isJarGoal
+      ? `${formatCurrency(goal.savedAmount)} saved in this goal will go back to ${jarName}.`
+      : goal.savedAmount > 0 && goal.fundingType === "percent"
+        ? `${formatCurrency(goal.savedAmount)} saved in this goal will be split across your jars.`
+        : "This can't be undone.";
+
+  const openDialog = (setOpen) => (event) => {
+    event.currentTarget.blur();
+    setOpen(true);
   };
 
   return (
@@ -116,15 +136,60 @@ function GoalCard({ goal }) {
         </Typography>
       </Box>
 
-      {isJarGoal && !isComplete && (
-        <Button
-          size="small"
-          variant="outlined"
-          sx={{ mt: 2 }}
-          onClick={handleOpenDialog}
-        >
-          Add money
-        </Button>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          mt: 2,
+          minHeight: 32,
+        }}
+      >
+        {isJarGoal && !isComplete ? (
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={openDialog(setDialogOpen)}
+          >
+            Add money
+          </Button>
+        ) : (
+          <span />
+        )}
+
+        <Box>
+          <IconButton
+            size="small"
+            aria-label="Edit goal"
+            onClick={openDialog(setEditOpen)}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            aria-label="Delete goal"
+            onClick={openDialog(setDeleteOpen)}
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      </Box>
+
+      {dialogOpen && (
+        <AddMoneyDialog goal={goal} onClose={() => setDialogOpen(false)} />
+      )}
+
+      {editOpen && (
+        <AddGoalDialog goal={goal} onClose={() => setEditOpen(false)} />
+      )}
+
+      {deleteOpen && (
+        <ConfirmDialog
+          title={`Delete "${goal.name}"?`}
+          message={deleteMessage}
+          onConfirm={() => deleteGoal(goal.id)}
+          onClose={() => setDeleteOpen(false)}
+        />
       )}
 
       {dialogOpen && (
