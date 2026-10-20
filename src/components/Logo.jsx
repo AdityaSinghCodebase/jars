@@ -49,9 +49,9 @@ function Logo({ size = 40 }) {
               duration={4}
               opacity={0.5}
               reverse
-              height={size * 0.2}
+              height={Math.round(size * 0.2)}
             />
-            <Wave color={color} duration={3} height={size * 0.2} />
+            <Wave color={color} duration={3} height={Math.round(size * 0.2)} />
           </motion.div>
         </Box>
       </Box>

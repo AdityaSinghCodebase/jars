@@ -17,7 +17,7 @@ function Wave({
         left: 0,
         right: 0,
         top: -height,
-        height,
+        height: height + 1,
         pointerEvents: "none",
       }}
     >
