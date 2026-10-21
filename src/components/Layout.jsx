@@ -18,6 +18,7 @@ import AddIcon from "@mui/icons-material/Add";
 import AddTransactionDialog from "./AddTransactionDialog";
 import AddGoalDialog from "./AddGoalDialog";
 import Logo from "./Logo";
+import HeaderActions from "./HeaderActions";
 import navItems from "../utils/navItems";
 
 const DRAWER_WIDTH = 240;
@@ -50,8 +51,18 @@ function Layout() {
             },
           }}
         >
-          <Box sx={{ mb: 3, px: 1, pt: 0.5 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              mb: 3,
+              px: 1,
+              pt: 0.5,
+            }}
+          >
             <Logo />
+            <HeaderActions />
           </Box>
           <List>
             {navItems.map((item) => (
@@ -79,6 +90,7 @@ function Layout() {
               zIndex: theme.zIndex.appBar,
               display: "flex",
               alignItems: "center",
+              justifyContent: "space-between",
               px: 2,
               py: 1,
               bgcolor: "background.paper",
@@ -87,6 +99,7 @@ function Layout() {
             }}
           >
             <Logo size={32} />
+            <HeaderActions />
           </Box>
         )}
 

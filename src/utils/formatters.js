@@ -13,3 +13,10 @@ export function formatDate(isoString) {
     year: "numeric",
   });
 }
+
+export function formatCompact(amount) {
+  return new Intl.NumberFormat("en-IN", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(amount);
+}

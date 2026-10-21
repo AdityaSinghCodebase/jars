@@ -1,51 +1,149 @@
-import { createContext, useState } from "react";
+import { createContext } from "react";
+import { Alert, Box, CircularProgress } from "@mui/material";
 import defaultJars from "../utils/defaultJars";
-import useLocalStorage from "../hooks/useLocalStorage";
-import { applyIncomeToGoals } from "../utils/goalHelpers";
+import useAuth from "../hooks/useAuth";
+import useUserDocument from "../hooks/useUserDocument";
+import {
+  createNotification,
+  getNewlyCompletedGoals,
+  getNewlyLowJars,
+} from "../utils/notificationHelpers";
+import {
+  applyTransaction,
+  canReverse,
+  reverseTransaction,
+} from "../utils/transactionHelpers";
 
 export const AppDataContext = createContext(null);
 
+const initialData = {
+  jars: defaultJars,
+  transactions: [],
+  goals: [],
+  notifications: [],
+  onboarded: false,
+};
+
 export function AppDataProvider({ children }) {
-  const [jars, setJars] = useLocalStorage("spendwise-jars", defaultJars);
-  const [transactions, setTransactions] = useLocalStorage(
-    "spendwise-transactions",
-    [],
+  const { user } = useAuth();
+  const [data, setData, { loading, error }] = useUserDocument(
+    user.uid,
+    initialData,
   );
-  const [goals, setGoals] = useLocalStorage("spendwise-goals", []);
+  const { jars, transactions, goals, notifications, onboarded } = data;
+
+  const updateField = (field) => (updater) =>
+    setData((previous) => ({
+      ...previous,
+      [field]:
+        typeof updater === "function" ? updater(previous[field]) : updater,
+    }));
+
+  const setJars = updateField("jars");
+  const setTransactions = updateField("transactions");
+  const setGoals = updateField("goals");
+  const setNotifications = updateField("notifications");
+
+  const notifyGoalsReached = (oldGoals, newGoals) => {
+    const completed = getNewlyCompletedGoals(oldGoals, newGoals);
+    if (completed.length === 0) return;
+
+    const newNotifications = completed.map((goal) =>
+      createNotification("goal", `You reached your goal: ${goal.name}!`),
+    );
+
+    setNotifications((previous) =>
+      [...newNotifications, ...previous].slice(0, 50),
+    );
+  };
+
+  const notifyLowJars = (
+    oldJars,
+    oldTransactions,
+    newJars,
+    newTransactions,
+  ) => {
+    const lowJars = getNewlyLowJars(
+      oldJars,
+      oldTransactions,
+      newJars,
+      newTransactions,
+    );
+    if (lowJars.length === 0) return;
+
+    const newNotifications = lowJars.map((jar) =>
+      createNotification(
+        "jar",
+        jar.balance <= 0
+          ? `${jar.name} is empty.`
+          : `${jar.name} is running low.`,
+      ),
+    );
+
+    setNotifications((previous) =>
+      [...newNotifications, ...previous].slice(0, 50),
+    );
+  };
+
+  const markAllNotificationsRead = () => {
+    setNotifications((previous) =>
+      previous.map((item) => ({ ...item, read: true })),
+    );
+  };
+
+  const clearNotifications = () => setNotifications([]);
 
   const addTransaction = (transaction) => {
+    const result = applyTransaction(jars, goals, transaction);
+
     const newTransaction = {
       id: crypto.randomUUID(),
       date: new Date().toISOString(),
       ...transaction,
+      allocations: result.allocations,
     };
+    const newTransactions = [newTransaction, ...transactions];
 
-    setTransactions((previous) => [newTransaction, ...previous]);
+    setTransactions(newTransactions);
+    setJars(result.jars);
+    setGoals(result.goals);
+    notifyGoalsReached(goals, result.goals);
+    notifyLowJars(jars, transactions, result.jars, newTransactions);
+  };
 
-    if (transaction.type === "expense") {
-      setJars((previousJars) =>
-        previousJars.map((jar) =>
-          jar.id === transaction.jarId
-            ? { ...jar, balance: jar.balance - transaction.amount }
-            : jar,
-        ),
-      );
-      return;
-    }
+  const updateTransaction = (transactionId, changes) => {
+    const target = transactions.find((item) => item.id === transactionId);
+    if (!target || !canReverse(target)) return;
 
-    const { updatedGoals, remainingIncome } = applyIncomeToGoals(
-      goals,
-      transaction.amount,
+    const reversed = reverseTransaction(jars, goals, target);
+    const updated = { ...target, ...changes };
+    const result = applyTransaction(reversed.jars, reversed.goals, updated);
+
+    const updatedTransaction = { ...updated, allocations: result.allocations };
+    const newTransactions = transactions.map((item) =>
+      item.id === transactionId ? updatedTransaction : item,
     );
 
-    setGoals(updatedGoals);
+    setTransactions(newTransactions);
+    setJars(result.jars);
+    setGoals(result.goals);
+    notifyGoalsReached(goals, result.goals);
+    notifyLowJars(jars, transactions, result.jars, newTransactions);
+  };
 
-    setJars((previousJars) =>
-      previousJars.map((jar) => ({
-        ...jar,
-        balance: jar.balance + (remainingIncome * jar.percent) / 100,
-      })),
+  const deleteTransaction = (transactionId) => {
+    const target = transactions.find((item) => item.id === transactionId);
+    if (!target || !canReverse(target)) return;
+
+    const reversed = reverseTransaction(jars, goals, target);
+    const newTransactions = transactions.filter(
+      (item) => item.id !== transactionId,
     );
+
+    setJars(reversed.jars);
+    setGoals(reversed.goals);
+    setTransactions(newTransactions);
+    notifyLowJars(jars, transactions, reversed.jars, newTransactions);
   };
 
   const updateJarSettings = (updatedJars) => {
@@ -62,6 +160,37 @@ export function AppDataProvider({ children }) {
       }),
     );
   };
+
+  const resetJarSettings = () => {
+    setJars((previousJars) =>
+      previousJars.map((jar) => {
+        const original = defaultJars.find((item) => item.id === jar.id);
+        return original
+          ? {
+              ...jar,
+              percent: original.percent,
+              limitPercent: original.limitPercent,
+            }
+          : jar;
+      }),
+    );
+  };
+
+  const resetAllData = () => {
+    setData(initialData);
+  };
+
+  const completeSetup = (percents) => {
+    setData((previous) => ({
+      ...previous,
+      onboarded: true,
+      jars: previous.jars.map((jar) => ({
+        ...jar,
+        percent: percents[jar.id] ?? jar.percent,
+      })),
+    }));
+  };
+
   const addGoal = (goal) => {
     const newGoal = {
       id: crypto.randomUUID(),
@@ -77,19 +206,19 @@ export function AppDataProvider({ children }) {
     const goal = goals.find((item) => item.id === goalId);
     if (!goal || goal.fundingType !== "jar") return;
 
-    setGoals((previous) =>
-      previous.map((item) =>
-        item.id === goalId
-          ? { ...item, savedAmount: item.savedAmount + amount }
-          : item,
-      ),
+    const updatedGoals = goals.map((item) =>
+      item.id === goalId
+        ? { ...item, savedAmount: item.savedAmount + amount }
+        : item,
+    );
+    const updatedJars = jars.map((jar) =>
+      jar.id === goal.jarId ? { ...jar, balance: jar.balance - amount } : jar,
     );
 
-    setJars((previous) =>
-      previous.map((jar) =>
-        jar.id === goal.jarId ? { ...jar, balance: jar.balance - amount } : jar,
-      ),
-    );
+    setGoals(updatedGoals);
+    setJars(updatedJars);
+    notifyGoalsReached(goals, updatedGoals);
+    notifyLowJars(jars, transactions, updatedJars, transactions);
   };
 
   const updateGoal = (goalId, changes) => {
@@ -126,16 +255,43 @@ export function AppDataProvider({ children }) {
     setGoals((previous) => previous.filter((item) => item.id !== goalId));
   };
 
+  if (loading) {
+    return (
+      <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">
+          Could not load your data. Check your connection and refresh the page.
+        </Alert>
+      </Box>
+    );
+  }
+
   const value = {
     jars,
     transactions,
     goals,
+    notifications,
     addTransaction,
+    updateTransaction,
+    deleteTransaction,
     updateJarSettings,
+    resetJarSettings,
+    resetAllData,
     addGoal,
     addMoneyToGoal,
     updateGoal,
     deleteGoal,
+    markAllNotificationsRead,
+    clearNotifications,
+    onboarded,
+    completeSetup,
   };
 
   return (

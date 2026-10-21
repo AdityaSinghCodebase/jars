@@ -11,6 +11,7 @@ function ConfirmDialog({
   title,
   message,
   confirmLabel = "Delete",
+  confirmColor = "error",
   onConfirm,
   onClose,
 }) {
@@ -43,7 +44,7 @@ function ConfirmDialog({
         <Button
           size="small"
           type="submit"
-          color="error"
+          color={confirmColor}
           variant="contained"
           autoFocus
         >

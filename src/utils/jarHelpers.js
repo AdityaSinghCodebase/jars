@@ -16,3 +16,12 @@ export function getTotalIncome(transactions) {
 export function getJarCapacity(totalIncome, limitPercent) {
   return (totalIncome * limitPercent) / 100;
 }
+
+export function getJarExpense(transactions, jarId) {
+  return transactions
+    .filter(
+      (transaction) =>
+        transaction.type === "expense" && transaction.jarId === jarId,
+    )
+    .reduce((sum, transaction) => sum + transaction.amount, 0);
+}
